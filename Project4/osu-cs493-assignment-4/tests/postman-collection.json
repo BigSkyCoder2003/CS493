@@ -1,0 +1,544 @@
+{
+  "info": {
+    "name": "Business Photo API Tests",
+    "description": "Comprehensive test collection for the business photo API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Setup Tests",
+      "item": [
+        {
+          "name": "Get First Business ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has businesses array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('businesses');",
+                  "    pm.expect(jsonData.businesses).to.be.an('array');",
+                  "    pm.expect(jsonData.businesses.length).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "pm.test('First business has valid ID', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const firstBusiness = jsonData.businesses[0];",
+                  "    pm.expect(firstBusiness).to.have.property('_id');",
+                  "    pm.collectionVariables.set('businessId', firstBusiness._id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Photo Upload Tests",
+      "item": [
+        {
+          "name": "Upload Valid JPEG Photo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response contains photo ID', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set('photoId', jsonData.id);",
+                  "});",
+                  "",
+                  "pm.test('Response contains valid links', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('links');",
+                  "    pm.expect(jsonData.links).to.have.property('photo');",
+                  "    pm.expect(jsonData.links).to.have.property('business');",
+                  "    pm.expect(jsonData.links).to.have.property('download');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test.jpg"
+                },
+                {
+                  "key": "businessId",
+                  "value": "{{businessId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Test photo uploaded via Newman",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/photos",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos"]
+            }
+          }
+        },
+        {
+          "name": "Upload Without File (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions no file uploaded', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error.toLowerCase()).to.include('no file');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "businessId",
+                  "value": "{{businessId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Test photo without file",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/photos",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos"]
+            }
+          }
+        },
+        {
+          "name": "Upload With Invalid Business ID (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 or 500', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});",
+                  "",
+                  "pm.test('Response contains error message', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test.jpg"
+                },
+                {
+                  "key": "businessId",
+                  "value": "invalid_business_id_12345",
+                  "type": "text"
+                },
+                {
+                  "key": "caption",
+                  "value": "Test photo with invalid business ID",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/photos",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos"]
+            }
+          }
+        },
+        {
+          "name": "Upload Without Business ID (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions validation', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test.jpg"
+                },
+                {
+                  "key": "caption",
+                  "value": "Test photo without business ID",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/photos",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Photo Retrieval Tests",
+      "item": [
+        {
+          "name": "Get Photo Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Photo details are complete', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('_id');",
+                  "    pm.expect(jsonData).to.have.property('businessId');",
+                  "    pm.expect(jsonData).to.have.property('path');",
+                  "    pm.expect(jsonData).to.have.property('contentType');",
+                  "    pm.collectionVariables.set('photoPath', jsonData.path);",
+                  "});",
+                  "",
+                  "pm.test('Business ID matches', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.businessId).to.equal(pm.collectionVariables.get('businessId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/photos/{{photoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos", "{{photoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Nonexistent Photo (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/photos/64a1b2c3d4e5f6789abcdef0",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos", "64a1b2c3d4e5f6789abcdef0"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Integration Tests",
+      "item": [
+        {
+          "name": "Check Business Contains Photo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Business has photos array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('photos');",
+                  "    pm.expect(jsonData.photos).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Photos array contains uploaded photo', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const photoId = pm.collectionVariables.get('photoId');",
+                  "    const photoFound = jsonData.photos.some(photo => photo._id === photoId);",
+                  "    pm.expect(photoFound).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/{{businessId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", "{{businessId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Photo Download Tests",
+      "item": [
+        {
+          "name": "Download Photo via Media Path",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is image', function () {",
+                  "    const contentType = pm.response.headers.get('Content-Type');",
+                  "    pm.expect(contentType).to.include('image');",
+                  "});",
+                  "",
+                  "pm.test('Response has image data', function () {",
+                  "    pm.expect(pm.response.stream).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{photoPath}}",
+              "host": ["{{baseUrl}}{{photoPath}}"]
+            }
+          }
+        },
+        {
+          "name": "Download Nonexistent Photo (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/media/photos/64a1b2c3d4e5f6789abcdef0.jpg",
+              "host": ["{{baseUrl}}"],
+              "path": ["media", "photos", "64a1b2c3d4e5f6789abcdef0.jpg"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business API Tests",
+      "item": [
+        {
+          "name": "Get All Businesses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has pagination info', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('businesses');",
+                  "    pm.expect(jsonData).to.have.property('page');",
+                  "    pm.expect(jsonData).to.have.property('totalPages');",
+                  "    pm.expect(jsonData).to.have.property('pageSize');",
+                  "    pm.expect(jsonData).to.have.property('totalCount');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses"]
+            }
+          }
+        },
+        {
+          "name": "Get Business by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Business has required fields', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('_id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "    pm.expect(jsonData).to.have.property('address');",
+                  "    pm.expect(jsonData).to.have.property('city');",
+                  "    pm.expect(jsonData).to.have.property('state');",
+                  "    pm.expect(jsonData).to.have.property('zip');",
+                  "    pm.expect(jsonData).to.have.property('phone');",
+                  "    pm.expect(jsonData).to.have.property('category');",
+                  "    pm.expect(jsonData).to.have.property('website');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/{{businessId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", "{{businessId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Nonexistent Business (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/64a1b2c3d4e5f6789abcdef0",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", "64a1b2c3d4e5f6789abcdef0"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "businessId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "photoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "photoPath",
+      "value": "",
+      "type": "string"
+    }
+  ]
+} 
